@@ -7,8 +7,10 @@ error_reporting(E_ALL);
 ini_set("memory_limit", "10M");
 
 function ts_fmt($ts) {
-	// + 0.000000001 使用无小数的float满足.u格式, 否则$now === false
-	$now = DateTime::createFromFormat("U.u", strval($ts + 0.000000001));
+	$now = DateTime::createFromFormat("U.u", $ts);
+	if ($now === false) { // 无小数点不满足.u格式
+		return date("H:i:s", $ts);
+	}
 	$now->setTimeZone(new DateTimeZone('Asia/Shanghai'));
 	return $now->format("H:i:s.u");
 }
