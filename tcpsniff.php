@@ -6,16 +6,11 @@
 error_reporting(E_ALL);
 ini_set("memory_limit", "10M");
 
-function ts_fmt($ts) {
-	$now = DateTime::createFromFormat("U.u", $ts);
-	if ($now === false) { // 无小数点不满足.u格式
-		return date("H:i:s", $ts);
-	}
-	$now->setTimeZone(new DateTimeZone('Asia/Shanghai'));
-	return $now->format("H:i:s.u");
-}
+$opt = getopt('i:e:');
+$dev = $opt['i'] ?? "any";
+$exp = $opt['exp'] ?? "tcp";
 
-tcpsniff("any", "tcp", function($pktHdr, $ipHdr, $tcpHdr, $payload) {
+tcpsniff($dev, $exp, function($pktHdr, $ipHdr, $tcpHdr, $payload) {
 // tcpsniff("lo0", "tcp and port 9999", function($pktHdr, $ipHdr, $tcpHdr, $payload) {
 	$t = ts_fmt($pktHdr["ts"]);
 
@@ -36,13 +31,21 @@ tcpsniff("any", "tcp", function($pktHdr, $ipHdr, $tcpHdr, $payload) {
 		echo "$t RST $src -> $dst seq $seq, ack $ack\n";
 	} else if ($flags & TH_PUSH) {
 		echo "$t PSH $src -> $dst seq $seq, ack $ack\n";
-		// echo $payload, "\n";
 		echo bin2hex($payload), "\n";
 	} else if ($flags & TH_ACK) {
 		echo "$t ACK $src -> $dst seq $seq, ack $ack\n";
 	}
-
-	// if ($flags & TH_FIN || $flags & TH_RST) {
-	// 	var_dump("CLOSED");
-	// }
 });
+
+function isClose($tcpFlags) {
+	return $tcpFlags & TH_FIN || $tcpFlags & TH_RST;
+}
+
+function ts_fmt($ts) {
+	$now = DateTime::createFromFormat("U.u", $ts);
+	if ($now === false) { // 无小数点不满足.u格式
+		return date("H:i:s", $ts);
+	}
+	$now->setTimeZone(new DateTimeZone('Asia/Shanghai'));
+	return $now->format("H:i:s.u");
+}
