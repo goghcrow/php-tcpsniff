@@ -3,15 +3,14 @@
 // TODO: undeclareclass
 // TODO: undeffunc
 
-// FIXME ts_fmt 有问题, 直觉DateTime有BUG!!!!!!
-// FIXME 内存泄漏
-
 error_reporting(E_ALL);
 ini_set("memory_limit", "10M");
 
 function ts_fmt($ts) {
-	return date("H:i:s", $ts);
 	$now = DateTime::createFromFormat("U.u", $ts);
+	if ($now === false) {
+		return date("H:i:s", $ts);
+	}
 	$now->setTimeZone(new DateTimeZone('Asia/Shanghai'));
 	return $now->format("H:i:s.u");
 }

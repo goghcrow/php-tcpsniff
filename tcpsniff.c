@@ -137,7 +137,21 @@ static void pkt_handle(void *ud,
     if (result == SUCCESS) {
         zval_ptr_dtor(&retval);
     } else {
-        php_printf("ERROR calling pkt handler (zend_call_function)\n");
+        // 这里有个问题, 用户php代码回调一旦抛出异常, 因为PHP_FUNCTION(tcpsniff)阻塞在poll中, 函数不会返回
+        // 又因为php异常机制实现的问题, EG(exception) 已经被标记为true, 但是异常无法抛出
+        // 下一次pkt_handle中zend_call_function将会因为EG(exception) == true 返回false
+
+        // 方案1: - 这里使用fatal error 来结束流程, 把异常抛出去 -        
+        // php_error_docref(NULL, E_ERROR, "An error occurred while invoking the packet handler function");
+        
+        // 方案2: 一旦zend_call_function返回false, 终止sniff
+        tcpsniff_exit();
+        
+        /* if (EG(exception)) {
+            zend_throw_exception(NULL, "An error occurred while invoking the packet handler function");
+        } else {
+            php_error_docref(NULL, E_ERROR, "An error occurred while invoking the packet handler function");
+        } */
     }
 
     zval_ptr_dtor(&args[0]);

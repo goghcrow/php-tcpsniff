@@ -51,8 +51,8 @@ $option = [
     'ip_ttl' => 64,
     'ip_p' => 6,
     'ip_sum' => 0,
-    'ip_dst' => '127.0.0.1',
-    'ip_src' => '127.0.0.1',
+    'ip_dst' => long2ip('127.0.0.1'),
+    'ip_src' => long2ip('127.0.0.1'),
   );
   $tcpHdr = array (
     'th_sport' => 58995,

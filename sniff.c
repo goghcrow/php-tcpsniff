@@ -42,6 +42,8 @@ struct tcpsniff_t
     tcpsniff_pkt_handler pkt_handler;
 };
 
+static bool sniffing = 0;
+
 static void pcap_pkt_handler(struct tcpsniff_t *sniff, const struct pcap_pkthdr *pkt_hdr, const u_char *pkt)
 {
     if (pkt_hdr->caplen != pkt_hdr->len)
@@ -206,7 +208,8 @@ bool tcpsniff(struct tcpsniff_opt *opt, tcpsniff_pkt_handler pkt_handler)
     struct pcap_pkthdr *pkt_hdr = NULL;
     const u_char *pkt = NULL;
     int ret = 0;
-    while (1)
+    sniffing = true;
+    while (sniffing)
     {
         ret = pcap_next_ex(sniff.handle, &pkt_hdr, &pkt);
         if (ret == 0)
@@ -224,4 +227,9 @@ bool tcpsniff(struct tcpsniff_opt *opt, tcpsniff_pkt_handler pkt_handler)
     }
 
     return true;
+}
+
+void tcpsniff_exit()
+{
+    sniffing = false;
 }

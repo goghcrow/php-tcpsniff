@@ -29,5 +29,6 @@ struct tcpsniff_opt
 
 typedef void (*tcpsniff_pkt_handler)(void *ud, const struct pcap_pkthdr *, const struct ip *, const struct tcphdr *, const u_char *payload, size_t payload_size);
 bool tcpsniff(struct tcpsniff_opt *, tcpsniff_pkt_handler);
+void tcpsniff_exit();
 
 #endif
