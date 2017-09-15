@@ -155,7 +155,7 @@ bool tcpsniff(struct tcpsniff_opt *opt, tcpsniff_pkt_handler pkt_handler)
         char mask_buf[INET_ADDRSTRLEN];
         inet_ntop(AF_INET, &sniff.ip, ip_buf, INET_ADDRSTRLEN);
         inet_ntop(AF_INET, &sniff.subnet_mask, mask_buf, INET_ADDRSTRLEN);
-        printf("%s ip=%s mask=%s\n", sniff.device, ip_buf, mask_buf);
+        // printf("%s ip=%s mask=%s\n", sniff.device, ip_buf, mask_buf);
     }
 
     sniff.handle = pcap_open_live(sniff.device, sniff.snaplen, sniff.pkt_cnt_limit, sniff.timeout_limit, errbuf);
