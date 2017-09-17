@@ -1,8 +1,8 @@
 ## php-tcpsniff
 
-- libpcap简易封装, 使用场景：内网ipv4 + tcp包嗅探
+libpcap简易封装, 使用场景：内网ipv4 + tcp包嗅探
 
-注意：内部自动过滤非ip Packet与非TCP Segment, option["snaplen"] 设置过小, 会抓取不到ip头与tcp头, 从而导致回调不会触发;
+注意：自动过滤非ipV4 Packet与非TCP Segment, option["snaplen"] 设置过小, 会抓取不到ip头与tcp头, 从而导致回调不会触发;
 
 ### 说明
 
