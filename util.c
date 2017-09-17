@@ -1,13 +1,12 @@
-#ifndef __USE_BSD
-#define __USE_BSD
-#endif
+#define _BSD_SOURCE
+
 #ifndef __FAVOR_BSD
 #define __FAVOR_BSD
 #endif
-#include <netinet/tcp.h> /* struct tcphdr */
+#include <netinet/tcp.h>
+
 #include <stdbool.h>
 #include <stdint.h>
-#include "endian.h"
 #include "util.h"
 
 static inline uint16_t get_unaligned_be16(const uint8_t *p)

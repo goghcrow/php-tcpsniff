@@ -1,14 +1,36 @@
 #ifndef UTIL_H
 #define UTIL_H
 
-#ifndef __USE_BSD
-#define __USE_BSD
-#endif
+#define _BSD_SOURCE /* tcphdr 使用了 bsd的定义, 懒得改了 */
+
 #ifndef __FAVOR_BSD
 #define __FAVOR_BSD
 #endif
-#include <netinet/tcp.h> /* struct tcphdr */
+#include <netinet/tcp.h>
 #include <stdbool.h>
+#include <stdint.h>
+
+#ifndef __USE_BSD
+#define __USE_BSD
+#endif
+
+#ifdef __APPLE__
+#include <libkern/OSByteOrder.h>
+#define htobe16(x) OSSwapHostToBigInt16(x)
+#define htole16(x) OSSwapHostToLittleInt16(x)
+#define be16toh(x) OSSwapBigToHostInt16(x)
+#define le16toh(x) OSSwapLittleToHostInt16(x)
+#define htobe32(x) OSSwapHostToBigInt32(x)
+#define htole32(x) OSSwapHostToLittleInt32(x)
+#define be32toh(x) OSSwapBigToHostInt32(x)
+#define le32toh(x) OSSwapLittleToHostInt32(x)
+#define htobe64(x) OSSwapHostToBigInt64(x)
+#define htole64(x) OSSwapHostToLittleInt64(x)
+#define be64toh(x) OSSwapBigToHostInt64(x)
+#define le64toh(x) OSSwapLittleToHostInt64(x)
+#else
+#include <endian.h>
+#endif
 
 /* -=-=-=-=-=--=-=-=-=-=--=-=-=-=-=- IPV4 -=-=-=-=-=--=-=-=-=-=--=-=-=-=-=--=-=-=-=-=- */
 // #define IPV4_ADDR(a, b, c, d) ((a) | ((b) << 8) | ((c) << 16) | ((uint32_t)(d) << 24))
