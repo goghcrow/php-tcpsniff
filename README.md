@@ -132,6 +132,98 @@ Accept: */*
 
 ```
 
+Example
+
+```php
+<?php
+
+error_reporting(E_ALL);
+ini_set("memory_limit", "10M");
+
+$opt = getopt('i:e:');
+$dev = $opt['i'] ?? "any";
+$exp = $opt['e'] ?? "tcp";
+
+tcpsniff($dev, $exp, function (array $pktHdr, array $ipHdr, array $tcpHdr, array $tcpOpt, $payload) {
+    $t = fmt_ts($pktHdr["ts"]);
+
+    $flags = $tcpHdr["th_flags"];
+    $seq = $tcpHdr["th_seq"];
+    $ack = $tcpHdr["th_ack"];
+    
+    $ipSrc = long2ip($ipHdr["ip_src"]);
+    $ipDst = long2ip($ipHdr["ip_dst"]);
+    $src = "{$ipSrc}:{$tcpHdr["th_sport"]}";
+    $dst = "{$ipDst}:{$tcpHdr["th_dport"]}";
+
+	$flags = fmt_flags($flags);
+	$len = strlen($payload);
+    echo "$t $src -> $dst $flags seq $seq, ack $ack, len $len\n";
+	/*if ($tcpOpt["snd_wscale"]) {
+		print_r($tcpOpt);
+	}*/
+});
+
+function fmt_flags($flags)
+{
+	$str = [];
+	if ($flags & TH_SYN) {
+		$str[] = "SYN";
+	}
+	if ($flags & TH_ACK) {
+		$str[] = "ACK";
+	}
+	if ($flags & TH_PUSH) {
+		$str[] = "PSH";
+	}
+	if ($flags & TH_FIN) {
+		$str[] = "FIN";
+	}
+	if ($flags & TH_RST) {
+		$str[] = "RST";
+	}
+	return implode(" ", $str);
+}
+
+function fmt_ts($ts)
+{
+    $now = DateTime::createFromFormat("U.u", $ts);
+    if ($now === false) { // 无小数点不满足.u格式
+        return date("H:i:s", $ts);
+    }
+    $now->setTimeZone(new DateTimeZone('Asia/Shanghai'));
+    return rtrim($now->format("H:i:s.u"), "0");
+}
+```
+
+output:
+
+```
+$ sudo php -dextension=modules/tcpsniff.so tcpsniff.php
+19:55:30.2102 107.170.214.240:32202 -> 192.168.0.104:56740 ACK PSH seq 1647539194, ack 3655832949, len 31
+19:55:30.2102 192.168.0.104:56740 -> 107.170.214.240:32202 ACK seq 3655832949, ack 1647539225, len 0
+19:55:30.2103 127.0.0.1:1080 -> 127.0.0.1:56739 ACK PSH seq 4105645171, ack 1499206056, len 31
+19:55:30.2103 127.0.0.1:1080 -> 127.0.0.1:56739 ACK PSH seq 4105645171, ack 1499206056, len 31
+19:55:30.2103 127.0.0.1:56739 -> 127.0.0.1:1080 ACK seq 1499206056, ack 4105645202, len 0
+19:55:30.2103 127.0.0.1:56739 -> 127.0.0.1:1080 ACK seq 1499206056, ack 4105645202, len 0
+19:55:30.2104 127.0.0.1:56739 -> 127.0.0.1:1080 ACK PSH seq 1499206056, ack 4105645202, len 35
+19:55:30.2104 127.0.0.1:56739 -> 127.0.0.1:1080 ACK PSH seq 1499206056, ack 4105645202, len 35
+19:55:30.2105 127.0.0.1:1080 -> 127.0.0.1:56739 ACK seq 4105645202, ack 1499206091, len 0
+19:55:30.2105 127.0.0.1:1080 -> 127.0.0.1:56739 ACK seq 4105645202, ack 1499206091, len 0
+19:55:30.2105 192.168.0.104:56740 -> 107.170.214.240:32202 ACK PSH seq 3655832949, ack 1647539225, len 35
+19:55:30.4072 107.170.214.240:32202 -> 192.168.0.104:56740 ACK seq 1647539222, ack 3655832949, len 1
+19:55:30.4072 192.168.0.104:56740 -> 107.170.214.240:32202 ACK seq 3655832984, ack 1647539225, len 0
+19:55:30.6012 107.170.214.240:32202 -> 192.168.0.104:56740 ACK seq 1647539225, ack 3655832984, len 0
+19:55:31.1598 107.170.214.240:32202 -> 192.168.0.104:56740 ACK seq 1647539225, ack 3655832984, len 0
+19:55:31.9505 192.168.0.104:55198 -> 115.236.39.211:443 ACK PSH seq 1593730746, ack 59146333, len 68
+19:55:31.9745 115.236.39.211:443 -> 192.168.0.104:55198 ACK PSH seq 59146333, ack 1593730814, len 40
+19:55:31.9745 192.168.0.104:55198 -> 115.236.39.211:443 ACK seq 1593730814, ack 59146373, len 0
+19:55:33.6194 192.168.0.104:55151 -> 115.236.39.211:443 ACK PSH seq 2467895306, ack 42360090, len 28
+19:55:33.6265 115.236.39.211:443 -> 192.168.0.104:55151 ACK PSH seq 42360090, ack 2467895334, len 60
+19:55:33.6266 192.168.0.104:55151 -> 115.236.39.211:443 ACK seq 2467895334, ack 42360150, len 0
+19:55:34.2174 223.252.199.66:80 -> 192.168.0.104:56791 ACK FIN seq 2030706024, ack 1135276389, len 0
+```
+
 ### 参考
 
 

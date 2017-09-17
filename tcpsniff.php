@@ -8,7 +8,7 @@ $dev = $opt['i'] ?? "any";
 $exp = $opt['e'] ?? "tcp";
 
 tcpsniff($dev, $exp, function (array $pktHdr, array $ipHdr, array $tcpHdr, array $tcpOpt, $payload) {
-    $t = ts_fmt($pktHdr["ts"]);
+    $t = fmt_ts($pktHdr["ts"]);
 
     $flags = $tcpHdr["th_flags"];
     $seq = $tcpHdr["th_seq"];
@@ -19,29 +19,41 @@ tcpsniff($dev, $exp, function (array $pktHdr, array $ipHdr, array $tcpHdr, array
     $src = "{$ipSrc}:{$tcpHdr["th_sport"]}";
     $dst = "{$ipDst}:{$tcpHdr["th_dport"]}";
 
-    if ($flags & TH_FIN) {
-        echo "$t FIN $src -> $dst seq $seq, ack $ack\n";
-    } elseif ($flags & TH_SYN) {
-        echo "$t SYN $src -> $dst seq $seq, ack $ack\n";
-    } elseif ($flags & TH_RST) {
-        echo "$t RST $src -> $dst seq $seq, ack $ack\n";
-    } elseif ($flags & TH_PUSH) {
-        echo "$t PSH $src -> $dst seq $seq, ack $ack\n";
-        // echo bin2hex($payload), "\n";
-    } elseif ($flags & TH_ACK) {
-        echo "$t ACK $src -> $dst seq $seq, ack $ack\n";
-	}
-	if ($tcpOpt["snd_wscale"]) {
+	$flags = fmt_flags($flags);
+	$len = strlen($payload);
+    echo "$t $src -> $dst $flags seq $seq, ack $ack, len $len\n";
+	/*if ($tcpOpt["snd_wscale"]) {
 		print_r($tcpOpt);
-	}
+	}*/
 });
 
-function ts_fmt($ts)
+function fmt_flags($flags)
+{
+	$str = [];
+	if ($flags & TH_SYN) {
+		$str[] = "SYN";
+	}
+	if ($flags & TH_ACK) {
+		$str[] = "ACK";
+	}
+	if ($flags & TH_PUSH) {
+		$str[] = "PSH";
+	}
+	if ($flags & TH_FIN) {
+		$str[] = "FIN";
+	}
+	if ($flags & TH_RST) {
+		$str[] = "RST";
+	}
+	return implode(" ", $str);
+}
+
+function fmt_ts($ts)
 {
     $now = DateTime::createFromFormat("U.u", $ts);
     if ($now === false) { // 无小数点不满足.u格式
         return date("H:i:s", $ts);
     }
     $now->setTimeZone(new DateTimeZone('Asia/Shanghai'));
-    return $now->format("H:i:s.u");
+    return rtrim($now->format("H:i:s.u"), "0");
 }
