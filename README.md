@@ -10,11 +10,6 @@ libpcap简易封装, 使用场景：内网ipv4 + tcp包嗅探
 1. 仅支持NTS-CLI, 其他模式没有应用场景，遂不支持
 2. 依赖libpcap-dev
 
-```
-
-sudo yum install -y libpcap-devel.x86_64
-```
-
 ### install
 
 ```
