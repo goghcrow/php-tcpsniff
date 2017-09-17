@@ -1,4 +1,6 @@
+#ifndef _BSD_SOURCE
 #define _BSD_SOURCE
+#endif
 
 #ifndef __FAVOR_BSD
 #define __FAVOR_BSD

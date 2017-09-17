@@ -1,7 +1,11 @@
 #ifndef UTIL_H
 #define UTIL_H
 
-#define _BSD_SOURCE /* tcphdr 使用了 bsd的定义, 懒得改了 */
+
+// tcphdr 使用了 bsd的定义, 懒得改了
+#ifndef _BSD_SOURCE
+#define _BSD_SOURCE
+#endif
 
 #ifndef __FAVOR_BSD
 #define __FAVOR_BSD
