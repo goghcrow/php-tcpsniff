@@ -4,17 +4,42 @@
 
 注意：内部自动过滤非ip Packet与非TCP Segment, option["snaplen"] 设置过小, 会抓取不到ip头与tcp头, 从而导致回调不会触发;
 
-```
-php -dextension=modules/tcpsniff.so --re tcpsniff
-Extension [ <persistent> extension #60 tcpsniff version 0.0.1 ] {
+### 说明
 
-  - Constants [6] {
+0. PHP7 only
+1. 仅支持NTS-CLI, 其他模式没有应用场景，遂不支持
+2. 依赖libpcap-dev
+
+```
+
+sudo yum install -y libpcap-devel.x86_64
+```
+
+### install
+
+```
+sudo yum install -y libpcap-devel.x86_64
+# sudo apt-get install libpcap-dev
+# brew install libpcap
+phpize --clean
+phpize
+./configure
+make
+php -dextension=modules/tcpsniff.so --re tcpsniff
+```
+
+```
+Extension [ <persistent> extension #47 tcpsniff version 0.0.1 ] {
+
+  - Constants [8] {
     Constant [ integer TH_FIN ] { 1 }
     Constant [ integer TH_SYN ] { 2 }
     Constant [ integer TH_RST ] { 4 }
     Constant [ integer TH_PUSH ] { 8 }
     Constant [ integer TH_ACK ] { 16 }
     Constant [ integer TH_URG ] { 32 }
+    Constant [ integer TH_ECE ] { 64 }
+    Constant [ integer TH_CWR ] { 128 }
   }
 
   - Functions {
@@ -29,20 +54,51 @@ Extension [ <persistent> extension #60 tcpsniff version 0.0.1 ] {
     }
   }
 }
+```
 
-$option = [
-	"snaplen" => 65535,
-	"pkt_cnt_limit" => 0,
-	"timeout_limit" => 10, // ms
-];
+IDEHelper
 
-// $handler function(array $pktHdr, array $ipHdr, array $tcpHdr, string $payload) {}
-  $pktHdr = array (
+```php
+<?php
+if (false) {
+    define("TH_FIN", 0x01);
+    define("TH_SYN", 0x02);
+    define("TH_RST", 0x04);
+    define("TH_PUSH", 0x08);
+    define("TH_ACK", 0x10);
+    define("TH_URG", 0x20);
+    define("TH_ECE", 0x40);
+    define("TH_CWR", 0x80);
+
+    /**
+     * @param string $dev
+     * @param string $filter
+     * @param callable $handler
+     * @param array|null $option
+     * @return bool
+     */
+    function tcpsniff(string $dev, string $filter, callable $handler, array $option = null) {}
+
+    /**
+     * @param array $pktHdr
+     * @param array $ipHdr
+     * @param array $tcpHdr
+     * @param string $payload
+     */
+    $handler = function(array $pktHdr, array $ipHdr, array $tcpHdr, array, $tcpOpt, string $payload) {};
+}
+
+```
+
+回调参数示例:
+
+```
+  $pktHdr = [
     'caplen' => 134,
     'len' => 134,
     'ts' => 1505142888.657902,
-  );
-  $ipHdr = array (
+  ];
+  $ipHdr = [
     'ip_hl' => 5,
     'ip_v' => 4,
     'ip_tos' => 0,
@@ -53,8 +109,8 @@ $option = [
     'ip_sum' => 0,
     'ip_dst' => long2ip('127.0.0.1'),
     'ip_src' => long2ip('127.0.0.1'),
-  );
-  $tcpHdr = array (
+  ];
+  $tcpHdr = [
     'th_sport' => 58995,
     'th_dport' => 9999,
     'th_seq' => 2647432116,
@@ -64,7 +120,14 @@ $option = [
     'th_win' => 12759,
     'th_sum' => 65142,
     'th_urp' => 0,
-  );
+  ];
+  $tcpOpt = [
+    'rcv_tsval' => 1539399480
+    'rcv_tsecr' => 0
+    'sack_ok' => 1
+    'snd_wscale' => 7
+    'mss_clamp' => 1414
+  ];
   $payload = 'GET / HTTP/1.1
 Host: 127.0.0.1:9999
 User-Agent: curl/7.43.0
@@ -74,30 +137,7 @@ Accept: */*
 
 ```
 
-### install
-
-```
-sudo yum-test install -y libpcap-devel.x86_64
-sudo yum-test install -y yz-php7-devel.x86_64
-phpize --clean
-phpize
-./configure
-make
-```
-
-### 说明
-
-0. PHP7 only
-1. 仅支持NTS-CLI, 其他模式没有应用场景，遂不支持
-2. 依赖libpcap-dev
-
-```
-sudo apt-get install libpcap-dev
-sudo yum install -y libpcap-devel.x86_64
-```
-
-
-### 结构体查询
+### 参考
 
 
 ```c
@@ -334,5 +374,14 @@ struct sll_header {
 #define LINUX_SLL_MULTICAST     2
 #define LINUX_SLL_OTHERHOST     3
 #define LINUX_SLL_OUTGOING      4
-```
 
+
+struct tcpopt
+{
+  uint32_t rcv_tsval;     /* Time stamp value */
+  uint32_t rcv_tsecr;     /* Time stamp echo reply */
+  uint8_t sack_ok;        /* SACK seen on SYN packet	*/
+  uint8_t snd_wscale;     /* Window scaling received from sender	*/
+  uint16_t mss_clamp;     /* Maximal mss, negotiated at connection setup */
+};
+```
