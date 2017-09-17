@@ -1,6 +1,10 @@
 #ifndef SNIFF_H
 #define SNIFF_H
 
+#ifndef _BSD_SOURCE
+#define _BSD_SOURCE
+#endif
+
 #include <pcap/pcap.h>
 #ifndef __USE_BSD
 #define __USE_BSD
@@ -14,10 +18,17 @@
 #include <stddef.h>
 #include "util.h"
 
+// 可能BSD的定义太旧了, centos下 _BSD_SOURCE 竟然没有这俩货
+#ifndef TH_ECE
+#define TH_ECE 0x40
+#endif
+#ifndef TH_CWR
+#define TH_CWR 0x80
+#endif
+
 /*
 对pcap的简单封装 只抓tcp包
 */
-
 struct tcpsniff_opt
 {
     int snaplen;       /* 最大捕获长度               */
