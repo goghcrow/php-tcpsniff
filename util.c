@@ -7,6 +7,7 @@
 #include <netinet/tcp.h> /* struct tcphdr */
 #include <stdbool.h>
 #include <stdint.h>
+#include "endian.h"
 #include "util.h"
 
 static inline uint16_t get_unaligned_be16(const uint8_t *p)
@@ -23,14 +24,14 @@ static inline bool tcp_parse_aligned_timestamp(struct tcpopt *opt, const struct 
 {
     const uint32_t *ptr = (const uint32_t *)(th + 1);
 
-    if (*ptr == htonl((TCPOPT_NOP << 24) | (TCPOPT_NOP << 16) | (TCPOPT_TIMESTAMP << 8) | TCPOLEN_TIMESTAMP))
+    if (*ptr == htobe32((TCPOPT_NOP << 24) | (TCPOPT_NOP << 16) | (TCPOPT_TIMESTAMP << 8) | TCPOLEN_TIMESTAMP))
     {
         ++ptr;
-        opt->rcv_tsval = ntohl(*ptr);
+        opt->rcv_tsval = be32toh(*ptr);
         ++ptr;
         if (*ptr)
         {
-            opt->rcv_tsecr = ntohl(*ptr)/* - tp->tsoffset*/;
+            opt->rcv_tsecr = htobe32(*ptr)/* - tp->tsoffset*/;
         }
         else
         {

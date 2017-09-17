@@ -31,6 +31,9 @@ tcpsniff($dev, $exp, function (array $pktHdr, array $ipHdr, array $tcpHdr, array
     } elseif ($flags & TH_ACK) {
         echo "$t ACK $src -> $dst seq $seq, ack $ack\n";
 	}
+	if ($tcpOpt["snd_wscale"]) {
+		print_r($tcpOpt);
+	}
 });
 
 function ts_fmt($ts)
