@@ -12,6 +12,7 @@
 #include <netinet/tcp.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include "util.h"
 
 /*
 对pcap的简单封装 只抓tcp包
@@ -27,7 +28,13 @@ struct tcpsniff_opt
     void *ud;          /* 回调第一个参数              */
 };
 
-typedef void (*tcpsniff_pkt_handler)(void *ud, const struct pcap_pkthdr *, const struct ip *, const struct tcphdr *, const u_char *payload, size_t payload_size);
+typedef void (*tcpsniff_pkt_handler)(void *ud,
+                                     const struct pcap_pkthdr *,
+                                     const struct ip *,
+                                     const struct tcphdr *,
+                                     const struct tcpopt *,
+                                     const u_char *payload,
+                                     size_t payload_size);
 bool tcpsniff(struct tcpsniff_opt *, tcpsniff_pkt_handler);
 void tcpsniff_exit();
 

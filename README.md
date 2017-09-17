@@ -131,7 +131,7 @@ struct  ether_header {
 
 ```c
 struct  ether_arp {
-        struct  arphdr ea_hdr;      /* fixed-size header       */
+        struct  arphdr ea_hdr;          /* fixed-size header       */
         u_char  arp_sha[6];             /* sender hardware address */
         u_char  arp_spa[4];             /* sender protocol address */
         u_char  arp_tha[6];             /* target hardware address */
@@ -149,7 +149,7 @@ http://unix.superglobalmegacorp.com/BSD4.4/newsrc/netinet/ip.h.html
 struct ip {
 #if BYTE_ORDER == LITTLE_ENDIAN 
         u_char  ip_hl:4,                /* header length */
-                    ip_v:4;                     /* version */
+                ip_v:4;                 /* version */
 #endif
 #if BYTE_ORDER == BIG_ENDIAN 
         u_char  ip_v:4,                 /* version */
@@ -186,11 +186,11 @@ struct tcphdr {
         tcp_seq th_ack;                 /* acknowledgement number */
 #if BYTE_ORDER == LITTLE_ENDIAN 
         u_char  th_x2:4,                /* (unused) */
-                    th_off:4;           /* data offset */
+                th_off:4;               /* data offset */
 #endif
 #if BYTE_ORDER == BIG_ENDIAN 
         u_char  th_off:4,               /* data offset */
-                    th_x2:4;            /* (unused) */
+                th_x2:4;                /* (unused) */
 #endif
         u_char  th_flags;
 #define TH_FIN  0x01

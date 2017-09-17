@@ -20,6 +20,7 @@
 #include <stddef.h>
 #include <assert.h>
 #include "sniff.h"
+#include "util.h"
 
 struct tcpsniff_opt;
 
@@ -58,7 +59,8 @@ static void pcap_pkt_handler(struct tcpsniff_t *sniff, const struct pcap_pkthdr 
     {
     case DLT_NULL: // 0
         // FIXME support PF_LOCAL ?
-        if (*(int32_t *)pkt != PF_INET) {
+        if (*(int32_t *)pkt != PF_INET)
+        {
             protocol = 0;
         }
         break;
@@ -78,7 +80,8 @@ static void pcap_pkt_handler(struct tcpsniff_t *sniff, const struct pcap_pkthdr 
     break;
     }
 
-    // 忽略非ip
+    // 忽略非ipv4, e.g. ETHERTYPE_ARP, ETHERTYPE_IPV6
+    // FIXME 支持 IPV6
     if (protocol != ETHERTYPE_IP)
     {
         return;
@@ -114,6 +117,16 @@ static void pcap_pkt_handler(struct tcpsniff_t *sniff, const struct pcap_pkthdr 
     // 或者 强制类型转换, 不需要自己算, 直接读, 这里为什么不用自己ntoh转字节序????????
 
     struct ip *ip_hdr = (struct ip *)(pkt + sniff->dl_hdr_offset);
+
+    if (IPV4_IS_BROADCAST_ADDR(ip_hdr->ip_dst.s_addr))
+    {
+        return;
+    }
+    if (IPV4_IS_MULTICAST_ADDR(ip_hdr->ip_dst.s_addr))
+    {
+        return;
+    }
+
     int ip_hdr_sz = ip_hdr->ip_hl * 4;
 
     // 忽略非tcp pkt
@@ -123,12 +136,22 @@ static void pcap_pkt_handler(struct tcpsniff_t *sniff, const struct pcap_pkthdr 
     }
     struct tcphdr *tcp_hdr = (struct tcphdr *)(pkt + sniff->dl_hdr_offset + ip_hdr_sz);
     int tcp_hdr_sz = tcp_hdr->th_off * 4;
+    int tcp_hdr_opt_sz = tcp_hdr_sz - sizeof(struct tcphdr); // tcp_hdr_min_len: 20
+
+    // 注意: 这里使用栈上变量, pkt_handler返回后不能继续使用tcp_opt, 如果使用copy一份
+    struct tcpopt tcp_opt;
+    memset(&tcp_opt, 0, sizeof(tcp_opt));
+    if (tcp_hdr_opt_sz)
+    {
+        tcp_parse_recv_options(tcp_hdr, &tcp_opt);
+    }
+    // fixme urgent_ptr, 忽略数据
+
     int total_hdr_sz = sniff->dl_hdr_offset + ip_hdr_sz + tcp_hdr_sz;
     int payload_sz = pkt_hdr->caplen - total_hdr_sz;
     assert(payload_sz >= 0);
     const u_char *payload = pkt + total_hdr_sz;
-    // printf("ip_hdr_size=%d tcp_hdr_size=%d payload_size=%d\n", ip_hdr_sz, tcp_hdr_sz, payload_sz);
-    sniff->pkt_handler(sniff->ud, pkt_hdr, ip_hdr, tcp_hdr, payload, payload_sz);
+    sniff->pkt_handler(sniff->ud, pkt_hdr, ip_hdr, tcp_hdr, &tcp_opt, payload, payload_sz);
 }
 
 bool tcpsniff(struct tcpsniff_opt *opt, tcpsniff_pkt_handler pkt_handler)
@@ -138,7 +161,7 @@ bool tcpsniff(struct tcpsniff_opt *opt, tcpsniff_pkt_handler pkt_handler)
     memset(&sniff, 0, sizeof(sniff));
     memcpy(&sniff, opt, sizeof(*opt));
     sniff.pkt_handler = pkt_handler;
-    
+
     // Get information for device 查询网卡IP地址与子网掩码
     // device = any ip与mask 均为0.0.0.0
     if (pcap_lookupnet(sniff.device, &sniff.ip, &sniff.subnet_mask, errbuf) == -1)
@@ -170,7 +193,7 @@ bool tcpsniff(struct tcpsniff_opt *opt, tcpsniff_pkt_handler pkt_handler)
     // fprintf(stderr, "datalink type is %d\n", sniff.dl_type);
     switch (sniff.dl_type)
     {
-    case DLT_NULL: /* BSD loopback encapsulation */
+    case DLT_NULL:               /* BSD loopback encapsulation */
         sniff.dl_hdr_offset = 4; // 4byte 本地字节序, 值为PF_* socket.h 用来说明pkt的网络层协议
         break;
     case DLT_RAW: // 无链路层hdr
