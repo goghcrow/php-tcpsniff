@@ -214,8 +214,8 @@ class TCPSniff extends EventEmitter
         $packet->sIP = long2ip($ipHdr["ip_src"]);
         $packet->dIP = long2ip($ipHdr["ip_dst"]);
         //
-        $packet->sHost = gethostbyname($packet->sIP);
-        $packet->dHost = gethostbyname($packet->dIP);
+        // $packet->sHost = gethostbyname($packet->sIP);
+        // $packet->dHost = gethostbyname($packet->dIP);
 
         $segment = new TCPHdr();
         $segment->sPort = $tcpHdr["th_sport"];
