@@ -1,9 +1,7 @@
 <?php
 
 
-// FIXME !!!!!!!!! retransmit 处理重发的包, 否则 send recv 事件会重复emit
-// FIXME 处理半连接 FIN_WAIT1 FIN_WAIT2, FIXME 处理 TIME_WAIT, 处理TIME_WAIT要保证close事件emit一次
-// FIXME 采用延时删除，否则any模式会导致先删除，数据包重复, 重建建立起来session
+// example
 
 $tcpsniff = new TCPSniff();
 $tcpsniff->on(TCPSniff::EVT_SESSION, function(TCPSession $session) {
@@ -13,19 +11,19 @@ $tcpsniff->on(TCPSniff::EVT_SESSION, function(TCPSession $session) {
     $session->once(TCPSession::EVT_CLOSE, function(TCPSession $session) {
         echo "CLOSE $session\n";
     });
-    $session->on(TCPSession::EVT_SEND, function(TCPSession $session, $payload) {
-        $len = strlen($payload);
-        echo "SEND $session len $len\n";
-        echo $payload, "\n";
+    $session->on(TCPSession::EVT_SEND, function(TCPSession $session) {
+        echo "SEND $session len $session->payloadLen\n";
+        echo $session->payload, "\n";
     });
-    $session->on(TCPSession::EVT_RECEIVE, function(TCPSession $session, $payload) {
-        $len = strlen($payload);
-        echo "RCVD $session len $len\n";
-        echo $payload, "\n";
+    $session->on(TCPSession::EVT_RECEIVE, function(TCPSession $session) {
+        echo "RCVD $session len $session->payloadLen\n";
+        echo $session->payload, "\n";
     });
 });
 $tcpsniff->start();
 
+
+//////////////////////////////////////////////////////////////////////////////////////
 
 class EventEmitter
 {
@@ -223,7 +221,7 @@ class TCPSniff extends EventEmitter
         $segment->sPort = $tcpHdr["th_sport"];
         $segment->dPort = $tcpHdr["th_dport"];
         $segment->seqNum = $tcpHdr["th_seq"];
-        $segment->seqAck = $tcpHdr["th_ack"];
+        $segment->ackNum = $tcpHdr["th_ack"];
         $segment->offset = $tcpHdr["th_off"];
         $segment->flags = $tcpHdr["th_flags"];
         $segment->win = $tcpHdr["th_win"];
@@ -259,7 +257,7 @@ class TCPSniff extends EventEmitter
                         unset($this->sessions[$key]);
                     });
                 } else {
-                    // fixme $this->sessions 在any模式，网卡中转数据数据包重复会导致内存sessions数据不断增长
+                    // $this->sessions 在any模式，网卡中转数据数据包重复会导致内存sessions数据不断增长
                     unset($this->sessions[$key]);
                 }
             });
@@ -313,6 +311,7 @@ class TCPSession extends EventEmitter
      */
     public $segment;
     public $payload;
+    public $payloadLen;
 
     public $state;
 
@@ -322,6 +321,8 @@ class TCPSession extends EventEmitter
     public $sndISN;
     public $sndNxtSeq;
     public $rcvISN;
+    public $sndPkts = [];
+    public $rcvPkts = [];
 
     public function trackPacket(PktHdr $frame, IPHdr $packet, TCPHdr $segment, $payload)
     {
@@ -329,6 +330,7 @@ class TCPSession extends EventEmitter
         $this->packet = $packet;
         $this->segment = $segment;
         $this->payload = $payload;
+        $this->payloadLen = strlen($payload);
 
         if ($this->state === null) {
             $this->src = "{$packet->sIP}:{$segment->sPort}";
@@ -392,8 +394,6 @@ class TCPSession extends EventEmitter
         } else if($this->segment->RST) {
             $this->state = TCPState::CLOSED;
             $this->emit(static::EVT_CLOSE, $this);
-        } else {
-
         }
     }
 
@@ -408,38 +408,49 @@ class TCPSession extends EventEmitter
 
     private function established()
     {
-        // fixme 连接另一端到达ESTABLISHED状态： establish 三次握手最后一次, 通过检查ack值，确认是establish...
+        // 连接另一端到达ESTABLISHED状态： establish 三次握手最后一次, 通过检查ack值，确认是establish...
         // if ($this->segment->seqAck ===  synAck -> seq + 1) {
         //     return;
         // }
 
         $src = $this->currentSrc();
         if ($src === $this->src) {
-            if (strlen($this->payload)) {
-                $this->emit(static::EVT_SEND, $this, $this->payload);
+            if ($this->payloadLen) {
+                if (isset($this->sndPkts[$this->segment->seqNum + $this->payloadLen])) {
+                    // ignore retransmit
+                } else {
+                    $this->sndPkts[$this->segment->seqNum + $this->payloadLen] = true;
+                    $this->emit(static::EVT_SEND, $this);
+                }
             }
             if ($this->segment->FIN) {
                 $this->state = TCPState::FIN_WAIT_1;
             }
-            // fixme rst
+            // rst ?
         } else if ($src === $this->dst) {
-            if (strlen($this->payload)) {
-                $this->emit(static::EVT_RECEIVE, $this, $this->payload);
+            if ($this->payloadLen) {
+                if (isset($this->rcvPkts[$this->segment->seqNum + $this->payloadLen])) {
+                    // ignore retransmit
+                } else {
+                    $this->rcvPkts[$this->segment->seqNum + $this->payloadLen] = true;
+                    $this->emit(static::EVT_RECEIVE, $this);
+                }
             }
             if ($this->segment->FIN) {
                 $this->state = TCPState::CLOSE_WAIT;
             }
-            // fixme rst
+            // rst?
         }
     }
 
+    // finWait1 finWait2 ... half close
     private function finWait()
     {
         $src = $this->currentSrc();
         if ($src === $this->dst && $this->segment->FIN) {
             $this->state = TCPState::CLOSING;
         } else {
-            // fixme time_wait
+            // time_wait?
         }
     }
 
@@ -548,7 +559,7 @@ class TCPHdr
     public $sPort;
     public $dPort;
     public $seqNum;
-    public $seqAck;
+    public $ackNum;
     public $win;
     public $checkSum;
     public $urp;
