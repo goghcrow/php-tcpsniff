@@ -51,7 +51,7 @@ Extension [ <persistent> extension #47 tcpsniff version 0.0.1 ] {
 }
 ```
 
-IDEHelper
+### IDEHelper
 
 ```php
 <?php
@@ -80,7 +80,7 @@ if (false) {
      * @param array $tcpHdr
      * @param string $payload
      */
-    $handler = function(array $pktHdr, array $ipHdr, array $tcpHdr, array, $tcpOpt, string $payload) {};
+    $handler = function(array $pktHdr, array $ipHdr, array $tcpHdr, array $tcpOpt, string $payload) {};
 }
 
 ```
@@ -132,7 +132,7 @@ Accept: */*
 
 ```
 
-Example
+### Example
 
 ```php
 <?php
@@ -156,24 +156,24 @@ tcpsniff($dev, $exp, function (array $pktHdr, array $ipHdr, array $tcpHdr, array
     $src = "{$ipSrc}:{$tcpHdr["th_sport"]}";
     $dst = "{$ipDst}:{$tcpHdr["th_dport"]}";
 
-	$flags = fmt_flags($flags);
-	$len = strlen($payload);
+    $flags = fmt_flags($flags);
+    $len = strlen($payload);
     echo "$t $src -> $dst $flags seq $seq, ack $ack, len $len\n";
-	/*if ($tcpOpt["snd_wscale"]) {
-		print_r($tcpOpt);
-	}*/
+    /*if ($tcpOpt["snd_wscale"]) {
+	print_r($tcpOpt);
+    }*/
 });
 
 function fmt_flags($flags)
 {
-	$str = [];
-	if ($flags & TH_SYN) {
-		$str[] = "SYN";
-	}
-	if ($flags & TH_ACK) {
-		$str[] = "ACK";
-	}
-	if ($flags & TH_PUSH) {
+    $str = [];
+    if ($flags & TH_SYN) {
+        $str[] = "SYN";
+    }
+    if ($flags & TH_ACK) {
+        $str[] = "ACK";
+    }
+    if ($flags & TH_PUSH) {
 		$str[] = "PSH";
 	}
 	if ($flags & TH_FIN) {
