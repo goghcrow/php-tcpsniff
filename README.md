@@ -12,9 +12,13 @@ libpcap简易封装, 使用场景：ipv4+tcp包嗅探
 ### install
 
 ```
-sudo yum install -y libpcap-devel.x86_64
-# sudo apt-get install libpcap-dev
-# brew install libpcap
+# CentOS
+yum install -y libpcap-devel.x86_64
+# Ubuntu
+apt-get install libpcap-dev
+# Mac
+brew install libpcap
+
 phpize --clean
 phpize
 ./configure
