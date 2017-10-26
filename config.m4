@@ -3,5 +3,5 @@ PHP_ARG_ENABLE(tcpsniff, whether to enable tcpsniff support,
 
 if test "$PHP_TCPSNIFF" != "no"; then
   CFLAGS="-std=gnu99 -g -Wall -lpcap"
-  PHP_NEW_EXTENSION(tcpsniff,  util.c sniff.c, $ext_shared)
+  PHP_NEW_EXTENSION(tcpsniff, sniff.c, $ext_shared)
 fi
