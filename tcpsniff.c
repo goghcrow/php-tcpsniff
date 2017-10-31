@@ -96,7 +96,7 @@ static void pkt_handle(void *ud,
 
     add_assoc_long(&pkt_hdr_z, "caplen", pkt_hdr->caplen);
     add_assoc_long(&pkt_hdr_z, "len", pkt_hdr->len);
-    add_assoc_double(&pkt_hdr_z, "ts", pkt_hdr->ts.tv_sec + pkt_hdr->ts.tv_usec / 1000000.0);
+    add_assoc_double(&pkt_hdr_z, "ts", (double)(pkt_hdr->ts.tv_sec) + (double)(pkt_hdr->ts.tv_usec) / 1000000.0);
 
     add_assoc_long(&ip_hdr_z, "ip_hl", ip_hdr->ip_hl);
     add_assoc_long(&ip_hdr_z, "ip_v", ip_hdr->ip_v);
